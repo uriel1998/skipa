@@ -7,29 +7,42 @@
 #	Get tags from filename
 ########################################################################
 
+# Requirements
 #pdftohtml
 #html2text
 #stat
 #date
 #exiftool
 
-PDF_Text=""
-PDF_Create_Time=""
-PDF_FNCreate_Time=""
-PDF_Author=""
-PDF_Creator=""
-PDF_Keywords="" #not an array - should be space or comma separated
-PDF_FNTags=""
-PDF_Subject=""
-PDF_Title=""
-PDF_FNTitle=""
-PDF_FileMod_Time=""
-PDF_File="" #actual filename, either from program calling it or from $1
 
+########################################################################
+# Definitions - if sourced, these should already be set
+########################################################################
+init_vars {
+    PDF_Text=""
+    PDF_Create_Time=""
+    PDF_FNCreate_Time=""
+    PDF_Author=""
+    PDF_Keywords="" #not an array - should be space or comma separated
+    PDF_FNTags=""
+    PDF_Subject=""
+    PDF_Title=""
+    PDF_FNTitle=""
+    PDF_File="" #actual filename, either from program calling it or from $1
+}
 
+########################################################################
+# Getting tags embedded in filename, if possible
+# Currently looking for tags from TagSpaces 
+# And dates from GScan2PDF 
+# NAME-YYYY-MM-DD[TAG TAG TAG].pdf
+########################################################################
 get_filename_tags {
    
     baseFN=$(basename ${PDF_File})
+    
+    #A Decade in Internet Time Symposium on the Dynamics of the Internet and Society, September 2011 - Boyd, Marwick, Boyd - Social Privacy.pdf
+    #JOURNAL - AUTHOR - TITLE - YEAR
     
     #does it have tags in the filename?
     if [[ ${baseFN} =~ "[" ]];then
@@ -46,6 +59,9 @@ get_filename_tags {
     fi
 }
 
+########################################################################
+# Getting relevant metadata from PDF file
+########################################################################
 get_metadata_tags {
 
     PDF_Text=$(pdftohtml -stdout -s -i -noframes %f | html2text)
@@ -63,89 +79,50 @@ get_metadata_tags {
     PDF_Title=$(echo "${scratch2}" | awk -F $'\t' '{print $4}')
     PDF_Create_Time=$(echo "${scratch2}" | awk -F $'\t' '{print $5}')
 
-
 }
 
+eval_metadata {
+    
 
-########################################################################
-# Definitions
-########################################################################
-OurFile=()
-OurMimetype=
-CheckOCR=
-InputFile=
-DataStoredDir=$XDG_DATA_HOME/organ_izer
+    ${PDF_Create_Time}
+    ${PDF_FNCreate_Time}
 
+    ${PDF_Keywords}
+    ${PDF_FNTags}
 
-########################################################################
-# Functions
-########################################################################
+    ${PDF_Title}
+    ${PDF_FNTitle}
 
-# For config file
-#if [ -f "$XDG_DATA_HOME/organ_izer/organ.rc" ];then
-#	readarray -t line < "$XDG_DATA_HOME/organ_izer/organ.rc"
-#fi
-
-function get_exifdata {
-
-    exiftool 
+    # check our document metadata against filename metadata
+    # if some is empty, copy over
+    # if conflict, flag it
     
 }
 
-
-# https://stackoverflow.com/questions/23356779/how-can-i-store-find-command-result-as-arrays-in-bash
-# read the args (which should be files) into an array
-if [ -d "$InputFile" ];then
-		
-		while IFS=  read -r -d $'\0'; do
-			OurFile+=("$REPLY")
-		done < <(find . -name ${input} -print0)
-	else
-		OurFile+=("$InputFile")
-fi
-
-for file in "${OurFile[@]}"
-do
-	file -p "$file"
-	mimetype=$(file -p "$file")
-
-	case "$mimetype" in
-		) #PDF
-        #(with -i switch) ./test.pdf: application/pdf; charset=binary
-        #./test.pdf: PDF document, version 1.4
-
-		;;
-		) #jpg
-		;;
-		) #mp3
-		;;
-		) #png
-		;;
-		) #doc/docx
-		;;
-	esac
-		
-	# do we have a reader for that mimetype? - exiftool or pdfinfo
-    # exiftool can apparently get most of what we want.
-
-	# collect the metadata that we're looking for
-
-	 # can I use grep or somesuch to parse the lines of what metadata is stored?
-	 # then awk to cut it out
-	 # pdf jpg png | title
-	 # pdf | subject
-	 # etc
-#title 
-#subject 
-#keywords 
-#author 
-#creator 
-#creation date 
-# I WANT WHETHER OR NOT THERE'S TEXT	look at PDFFONT
-# If no font or type 3 (not TTF or OTF, I'm guessing) then you're going to not have text
-done
-
-
+display_metadata {
+    #https://www.thelinuxrain.com/articles/multiple-item-data-entry-with-yad
+    ${PDF_Text}
+    yad --width=400 --title="" --text="Please enter your details:" \
+    --image="/usr/share/icons/Tango/scalable/emotes/face-smile.svg" \
+    --form --date-format="%-d %B %Y" --item-separator="," \
+    --field="Last name" \
+    --field="First name" \
+    --field="Date of birth":DT \
+    --field="Last holiday":CBE \
+    "" "" "Click calendar icon" "Gold Coast,Bali,Phuket,Sydney,other"
+    
+    
+    ${PDF_Create_Time}
+    ${PDF_FNCreate_Time}
+    ${PDF_Author}
+    ${PDF_Keywords}
+    ${PDF_FNTags}
+    ${PDF_Subject}
+    ${PDF_Title}
+    ${PDF_FNTitle}
+    ${PDF_File}
+    
+}
 ##############################################################################
 # Are we sourced?
 # From http://stackoverflow.com/questions/2683279/ddg#34642589
@@ -162,24 +139,27 @@ if [ "$?" -eq "0" ];then
     OUTPUT=0
 else
     OUTPUT=1
+    # These should be set already if called from a function
+    
+    init_vars
+    
     if [ "$#" = 0 ];then
         echo "Please call this as a function or with the filename as the first argument."
     else
         if [ -f "$1" ];then
-            SelectedVcard="$1"
-        else
-            #if it's coming from pplsearch for preview
-            SelectedVcard=$(echo "$1" | awk -F ':' '{print $2}' | realpath -p)
+            PDF_File="$1"
         fi
-        if [ ! -f "$SelectedVcard" ];then
+        if [ ! -f "$PDF_File" ];then
             echo "File not found..."
             exit 1
         fi
         SUCCESS=0
+        #do stuff above
+        #change the below, obviously
         output=$(read_vcard)
         if [ $SUCCESS -eq 0 ];then
             # If it gets here, it has to be standalone
-                echo "$output"
+                echo "$output"  # output some data
         else
             exit 99
         fi
