@@ -85,24 +85,24 @@ eval_metadata (){
     
     # check our document metadata against filename metadata
     # if some is empty, copy over
-    if [ -z ${PDF_Create_Time} ] && [ ! -z ${PDF_FNCreate_Time} ];then
+    if [[ -z ${PDF_Create_Time} ]] && [[ ! -z ${PDF_FNCreate_Time} ]];then
         PDF_Create_Time=${PDF_FNCreate_Time}
     fi
-    if  [ -z ${PDF_FNCreate_Time} ] && [ ! -z ${PDF_Create_Time} ];then
+    if  [[ -z ${PDF_FNCreate_Time} ]] && [[ ! -z ${PDF_Create_Time} ]];then
         PDF_FNCreate_Time=${PDF_Create_Time}
     fi
 
-    if [ -z ${PDF_Keywords} ] && [ ! -z ${PDF_FNTags} ];then
+    if [[ -z ${PDF_Keywords} ]] && [[ ! -z ${PDF_FNTags} ]];then
         PDF_Keywords=${PDF_FNTags}
     fi
-    if  [ -z ${PDF_FNTags} ] && [ ! -z ${PDF_Keywords} ];then
+    if  [[ -z ${PDF_FNTags} ]] && [[ ! -z ${PDF_Keywords} ]];then
         PDF_FNTags=${PDF_Keywords}
     fi
     
-    if [ -z ${PDF_Title} ] && [ ! -z ${PDF_FNTitle} ];then
+    if [[ -z ${PDF_Title} ]] && [[ ! -z ${PDF_FNTitle} ]];then
         PDF_Title=${PDF_FNTitle} 
     fi
-    if  [ -z ${PDF_FNTitle} ] && [ ! -z ${PDF_Title} ];then
+    if  [[ -z ${PDF_FNTitle} ]] && [[ ! -z ${PDF_Title} ]];then
         PDF_FNTitle=${PDF_Title}
     fi
     
@@ -114,7 +114,7 @@ eval_metadata (){
 display_metadata () {
     
     #Using the remote server aspect of xpdf to kill it after perusal
-    xpdf -remote skipa -geometry 300x400 -bg rgb:10/16/10 -z page "${PDF_File}" 
+    xpdf -remote skipa -geometry 300x400 -bg rgb:10/16/10 -z page "${PDF_File}" &
     
     
     #https://www.thelinuxrain.com/articles/multiple-item-data-entry-with-yad
@@ -130,8 +130,7 @@ display_metadata () {
     --field="Tags" \
     --field="Creation Time":DT \
     --field="FN Creation Time":DT \
-    --field="Text":TXT \
-    "${PDF_File}" "${PDF_Title}" "${PDF_FNTitle}" "${PDF_Subject}" "${PDF_Author}" "${PDF_Keywords}" "${PDF_FNTags}" "${PDF_Create_Time}" "${PDF_FNCreate_Time}" "${PDF_Text}"
+    "${PDF_File}" "${PDF_Title}" "${PDF_FNTitle}" "${PDF_Subject}" "${PDF_Author}" "${PDF_Keywords}" "${PDF_FNTags}" "${PDF_Create_Time}" "${PDF_FNCreate_Time}" 
     
     xpdf -remote skipa -quit
     
