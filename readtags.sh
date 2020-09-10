@@ -70,8 +70,8 @@ get_metadata_tags() {
     fi
     
     scratch1=$(stat -c '%Y' ${PDF_File})
-    PDF_FileMod_Time=$(date -d "${scratch1}" '+%Y:%m:%d %H:%M:%S%:z')
-    echo "FUCK"
+    PDF_FileMod_Time=$(date -d @"${scratch1}" '+%Y:%m:%d %H:%M:%S%:z')
+    echo "${scratch1}"
     scratch2=$(exiftool -T -sep ' ' -Author -Keywords -Subject -Title -CreateDate ${PDF_File})
     PDF_Author=$(echo "${scratch2}" | awk -F $'\t' '{print $1}')
     PDF_Keywords=$(echo "${scratch2}" | awk -F $'\t' '{print $2}')
@@ -112,11 +112,14 @@ eval_metadata (){
 }
 
 display_metadata () {
-    #use mupdf to bring up the file for perusal, then kill it?
+    
+    #Using the remote server aspect of xpdf to kill it after perusal
+    xpdf -remote skipa -geometry 300x400 -bg rgb:10/16/10 -z page "${PDF_File}" 
+    
     
     #https://www.thelinuxrain.com/articles/multiple-item-data-entry-with-yad
     
-    yad --width=400 --title="" --text="PDF metadata:" \
+    yad --width=400 --title="" --text="Verify and edit PDF metadata:" \
     --form --date-format="+%Y:%m:%d %H:%M:%S%:z" --item-separator="," \
     --field="Filename" \
     --field="Title" \
@@ -130,8 +133,10 @@ display_metadata () {
     --field="Text":TXT \
     "${PDF_File}" "${PDF_Title}" "${PDF_FNTitle}" "${PDF_Subject}" "${PDF_Author}" "${PDF_Keywords}" "${PDF_FNTags}" "${PDF_Create_Time}" "${PDF_FNCreate_Time}" "${PDF_Text}"
     
+    xpdf -remote skipa -quit
     
 }
+
 ##############################################################################
 # Are we sourced?
 # From http://stackoverflow.com/questions/2683279/ddg#34642589
