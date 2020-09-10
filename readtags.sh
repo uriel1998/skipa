@@ -18,7 +18,7 @@
 ########################################################################
 # Definitions - if sourced, these should already be set
 ########################################################################
-init_vars {
+init_vars (){
     PDF_Text=""
     PDF_Create_Time=""
     PDF_FNCreate_Time=""
@@ -37,7 +37,7 @@ init_vars {
 # And dates from GScan2PDF 
 # NAME-YYYY-MM-DD[TAG TAG TAG].pdf
 ########################################################################
-get_filename_tags {
+get_filename_tags (){
    
     baseFN=$(basename ${PDF_File})
     
@@ -62,16 +62,16 @@ get_filename_tags {
 ########################################################################
 # Getting relevant metadata from PDF file
 ########################################################################
-get_metadata_tags {
+get_metadata_tags() {
 
-    PDF_Text=$(pdftohtml -stdout -s -i -noframes %f | html2text)
+    PDF_Text=$(pdftohtml -stdout -s -i -noframes ${PDF_File} | html2text)
     if [ -z "$PDF_Text" ];then
-        PDF_Text=$(pdftohtml -stdout -s -i -hidden -noframes %f | html2text)
+        PDF_Text=$(pdftohtml -stdout -s -i -hidden -noframes ${PDF_File} | html2text)
     fi
     
     scratch1=$(stat -c '%Y' ${PDF_File})
-    PDF_FileMod_Time=$(date -d "@$(stat -c '%Y' ${scratch1})" '+%Y:%m:%d %H:%M:%S%:z')
-    
+    PDF_FileMod_Time=$(date -d "${scratch1}" '+%Y:%m:%d %H:%M:%S%:z')
+    echo "FUCK"
     scratch2=$(exiftool -T -sep ' ' -Author -Keywords -Subject -Title -CreateDate ${PDF_File})
     PDF_Author=$(echo "${scratch2}" | awk -F $'\t' '{print $1}')
     PDF_Keywords=$(echo "${scratch2}" | awk -F $'\t' '{print $2}')
@@ -81,46 +81,55 @@ get_metadata_tags {
 
 }
 
-eval_metadata {
+eval_metadata (){
     
-
-    ${PDF_Create_Time}
-    ${PDF_FNCreate_Time}
-
-    ${PDF_Keywords}
-    ${PDF_FNTags}
-
-    ${PDF_Title}
-    ${PDF_FNTitle}
-
     # check our document metadata against filename metadata
     # if some is empty, copy over
-    # if conflict, flag it
+    if [ -z ${PDF_Create_Time} ] && [ ! -z ${PDF_FNCreate_Time} ];then
+        PDF_Create_Time=${PDF_FNCreate_Time}
+    fi
+    if  [ -z ${PDF_FNCreate_Time} ] && [ ! -z ${PDF_Create_Time} ];then
+        PDF_FNCreate_Time=${PDF_Create_Time}
+    fi
+
+    if [ -z ${PDF_Keywords} ] && [ ! -z ${PDF_FNTags} ];then
+        PDF_Keywords=${PDF_FNTags}
+    fi
+    if  [ -z ${PDF_FNTags} ] && [ ! -z ${PDF_Keywords} ];then
+        PDF_FNTags=${PDF_Keywords}
+    fi
+    
+    if [ -z ${PDF_Title} ] && [ ! -z ${PDF_FNTitle} ];then
+        PDF_Title=${PDF_FNTitle} 
+    fi
+    if  [ -z ${PDF_FNTitle} ] && [ ! -z ${PDF_Title} ];then
+        PDF_FNTitle=${PDF_Title}
+    fi
+    
+    
+    #TODO: Add in: if conflict, flag it
     
 }
 
-display_metadata {
+display_metadata () {
+    #use mupdf to bring up the file for perusal, then kill it?
+    
     #https://www.thelinuxrain.com/articles/multiple-item-data-entry-with-yad
-    ${PDF_Text}
-    yad --width=400 --title="" --text="Please enter your details:" \
-    --image="/usr/share/icons/Tango/scalable/emotes/face-smile.svg" \
-    --form --date-format="%-d %B %Y" --item-separator="," \
-    --field="Last name" \
-    --field="First name" \
-    --field="Date of birth":DT \
-    --field="Last holiday":CBE \
-    "" "" "Click calendar icon" "Gold Coast,Bali,Phuket,Sydney,other"
     
+    yad --width=400 --title="" --text="PDF metadata:" \
+    --form --date-format="+%Y:%m:%d %H:%M:%S%:z" --item-separator="," \
+    --field="Filename" \
+    --field="Title" \
+    --field="FNTitle" \
+    --field="Subject" \
+    --field="Author" \
+    --field="Keywords" \
+    --field="Tags" \
+    --field="Creation Time":DT \
+    --field="FN Creation Time":DT \
+    --field="Text":TXT \
+    "${PDF_File}" "${PDF_Title}" "${PDF_FNTitle}" "${PDF_Subject}" "${PDF_Author}" "${PDF_Keywords}" "${PDF_FNTags}" "${PDF_Create_Time}" "${PDF_FNCreate_Time}" "${PDF_Text}"
     
-    ${PDF_Create_Time}
-    ${PDF_FNCreate_Time}
-    ${PDF_Author}
-    ${PDF_Keywords}
-    ${PDF_FNTags}
-    ${PDF_Subject}
-    ${PDF_Title}
-    ${PDF_FNTitle}
-    ${PDF_File}
     
 }
 ##############################################################################
@@ -154,9 +163,13 @@ else
             exit 1
         fi
         SUCCESS=0
+        get_filename_tags
+        get_metadata_tags
+        eval_metadata
+        display_metadata
         #do stuff above
         #change the below, obviously
-        output=$(read_vcard)
+        #output=$(read_vcard)
         if [ $SUCCESS -eq 0 ];then
             # If it gets here, it has to be standalone
                 echo "$output"  # output some data
