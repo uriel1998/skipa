@@ -13,7 +13,7 @@
 #stat
 #date
 #exiftool
-
+#detox
 
 ########################################################################
 # Definitions - if sourced, these should already be set
@@ -29,7 +29,24 @@ init_vars (){
     PDF_Title=""
     PDF_FNTitle=""
     PDF_File="" #actual filename, either from program calling it or from $1
+    PDF_Dir=""
+    tempdir=$(mktemp -d)
 }
+
+tags_to_filename (){
+    #get base dir of oriignal file do thaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaat!
+    #TITLE-YYYY-MM-DD[tag tag tag tag].pdf
+    #move original to tempdir
+    #create new fn string
+        T2a=$(echo "${PDF_Title}" | detox --inline)
+        T2b=$(echo "${PDF_Create_Time}" | cut -d " " -f1 | sed s/:/-/g)
+        T2FN=$(printf "%s/%s-%s[%s].pdf" "$PDF_Dir" "$T2a" "$T2b" "$PDF_Keywords")
+        echo "$T2FN"
+        
+    
+}
+
+
 
 ########################################################################
 # Getting tags embedded in filename, if possible
@@ -130,7 +147,10 @@ display_metadata () {
     --field="Tags" \
     --field="Creation Time":DT \
     --field="FN Creation Time":DT \
+    --button=gtk-save:0 --button=gtk-cancel:1 --button=gtk-quit:1\
     "${PDF_File}" "${PDF_Title}" "${PDF_FNTitle}" "${PDF_Subject}" "${PDF_Author}" "${PDF_Keywords}" "${PDF_FNTags}" "${PDF_Create_Time}" "${PDF_FNCreate_Time}" 
+    foo=$?
+    echo "$foo"
     
     xpdf -remote skipa -quit
     
@@ -161,6 +181,8 @@ else
     else
         if [ -f "$1" ];then
             PDF_File="$1"
+            PDF_Dir=$(dirname `readlink -f ${PDF_File}`)
+            echo "$PDF_Dir"
         fi
         if [ ! -f "$PDF_File" ];then
             echo "File not found..."
@@ -171,6 +193,7 @@ else
         get_metadata_tags
         eval_metadata
         display_metadata
+        tags_to_filename
         #do stuff above
         #change the below, obviously
         #output=$(read_vcard)
