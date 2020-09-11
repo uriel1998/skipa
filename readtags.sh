@@ -34,17 +34,24 @@ init_vars (){
 }
 
 tags_to_filename (){
-    #get base dir of oriignal file do thaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaat!
-    #TITLE-YYYY-MM-DD[tag tag tag tag].pdf
-    #move original to tempdir
-    #create new fn string
+
+        #write to exif first
+        exiftool -Author="${PDF_Author}" -Keywords="[${PDF_Keywords}]" -Subject="${PDF_Subject}" -Title="${PDF_Title}" -CreateDate="${PDF_Create_Time}" "${PDF_File}"
+        
+        mv "${PDF_File}" "$tempdir/${PDF_File}"
+        #TITLE-YYYY-MM-DD[tag tag tag tag].pdf
+        #move original to tempdir
+        
+        #create new fn string
         T2a=$(echo "${PDF_Title}" | detox --inline)
         T2b=$(echo "${PDF_Create_Time}" | cut -d " " -f1 | sed s/:/-/g)
         T2FN=$(printf "%s/%s-%s[%s].pdf" "$PDF_Dir" "$T2a" "$T2b" "$PDF_Keywords")
         echo "$T2FN"
-        
+        cp "$tempdir/${PDF_File}" "${T2FN}"
+        #copy old to new T2FN string
     
 }
+
 
 
 
@@ -96,6 +103,8 @@ get_metadata_tags() {
     PDF_Title=$(echo "${scratch2}" | awk -F $'\t' '{print $4}')
     PDF_Create_Time=$(echo "${scratch2}" | awk -F $'\t' '{print $5}')
 
+
+
 }
 
 eval_metadata (){
@@ -126,6 +135,7 @@ eval_metadata (){
     
     #TODO: Add in: if conflict, flag it
     
+    
 }
 
 display_metadata () {
@@ -152,6 +162,9 @@ display_metadata () {
     foo=$?
     echo "$foo"
     
+    #use that foo output to know whether to exit (1) or not (0)
+    # check if mismatches
+    # resplit out the yad output to the variables
     xpdf -remote skipa -quit
     
 }
