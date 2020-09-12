@@ -36,7 +36,7 @@ init_vars (){
 tags_to_filename (){
 
         #write to exif first
-        exiftool -Author="${PDF_Author}" -Keywords="[${PDF_Keywords}]" -Subject="${PDF_Subject}" -Title="${PDF_Title}" -CreateDate="${PDF_Create_Time}" "${PDF_File}"
+        exiftool -Author="${PDF_Author}" -Keywords="${PDF_Keywords}" -Subject="${PDF_Subject}" -Title="${PDF_Title}" -CreateDate="${PDF_Create_Time}" "${PDF_File}"
         
         mv "${PDF_File}" "$tempdir/${PDF_File}"
         #TITLE-YYYY-MM-DD[tag tag tag tag].pdf
@@ -65,10 +65,12 @@ get_filename_tags (){
    
     baseFN=$(basename ${PDF_File})
     
+    #TODO - for Mendeley renamed stuff
     #A Decade in Internet Time Symposium on the Dynamics of the Internet and Society, September 2011 - Boyd, Marwick, Boyd - Social Privacy.pdf
     #JOURNAL - AUTHOR - TITLE - YEAR
     
     #does it have tags in the filename?
+    #TODO - Check for multiple bracket sets 
     if [[ ${baseFN} =~ "[" ]];then
         PDF_FNTags=$(echo ${baseFN} | cut -d "[" -f2 | cut -d "]" -f1)
     fi
@@ -143,10 +145,10 @@ display_metadata () {
     #Using the remote server aspect of xpdf to kill it after perusal
     xpdf -remote skipa -geometry 300x400 -bg rgb:10/16/10 -z page "${PDF_File}" &
     
-    
+    #TODO  - note that the exiftag values will be what is written!!
     #https://www.thelinuxrain.com/articles/multiple-item-data-entry-with-yad
-    
-    yad --width=400 --title="" --text="Verify and edit PDF metadata:" \
+    OutString=$(yad --width=400 --center --window-icon=gtk-info \
+    --borders 3 --title="PDF Metadata" --text="Verify and edit PDF metadata:" \
     --form --date-format="+%Y:%m:%d %H:%M:%S%:z" --item-separator="," \
     --field="Filename" \
     --field="Title" \
@@ -158,8 +160,26 @@ display_metadata () {
     --field="Creation Time":DT \
     --field="FN Creation Time":DT \
     --button=gtk-save:0 --button=gtk-cancel:1 --button=gtk-quit:1\
-    "${PDF_File}" "${PDF_Title}" "${PDF_FNTitle}" "${PDF_Subject}" "${PDF_Author}" "${PDF_Keywords}" "${PDF_FNTags}" "${PDF_Create_Time}" "${PDF_FNCreate_Time}" 
+    "${PDF_File}" "${PDF_Title}" "${PDF_FNTitle}" "${PDF_Subject}" "${PDF_Author}" "${PDF_Keywords}" "${PDF_FNTags}" "${PDF_Create_Time}" "${PDF_FNCreate_Time}" )
     foo=$?
+    if [[ "$foo" == "0" ]];then
+        #echo "$OutString"
+        #awk out fields
+        
+        PDF_File=$(echo "$OutString" | awk -F '|' '{print $1}') 
+        PDF_Title=$(echo "$OutString" | awk -F '|' '{print $2}') 
+        PDF_FNTitle=$(echo "$OutString" | awk -F '|' '{print $3}') 
+        PDF_Subject=$(echo "$OutString" | awk -F '|' '{print $4}') 
+        PDF_Author=$(echo "$OutString" | awk -F '|' '{print $5}') 
+        PDF_Keywords=$(echo "$OutString" | awk -F '|' '{print $6}') 
+        PDF_FNTags=$(echo "$OutString" | awk -F '|' '{print $7}') 
+        PDF_Create_Time=$(echo "$OutString" | awk -F '|' '{print $8}') 
+        PDF_FNCreate_Time=$(echo "$OutString" | awk -F '|' '{print $9}')
+        #if any matching field is blank, copy over
+        eval_metadata
+        tags_to_filename
+        #./Chapter_13_Disbursements-2020-07-08[bankruptcy].pdf|Chapter 13 Disbursements|Chapter_13_Disbursements|Bankrupcty|Steven Saus|[bankruptcy]|bankruptcy|2020:07:08 00:00:00-04:00|2020-07-08 00:00:00+00:00|
+    fi 
     echo "$foo"
     
     #use that foo output to know whether to exit (1) or not (0)
@@ -206,7 +226,7 @@ else
         get_metadata_tags
         eval_metadata
         display_metadata
-        tags_to_filename
+        
         #do stuff above
         #change the below, obviously
         #output=$(read_vcard)
