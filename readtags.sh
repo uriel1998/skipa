@@ -6,7 +6,10 @@
 #   Get tags from metadata
 #	Get tags from filename
 ########################################################################
-
+#TODO - just make sure there's no mismatches mode
+#TODO - just make sure there's no empty mode
+#TODO - Mendeley renaming
+#TODO - is there OCR mode
 # Requirements
 #pdftohtml
 #html2text
@@ -73,6 +76,9 @@ get_filename_tags (){
     #TODO - Check for multiple bracket sets 
     if [[ ${baseFN} =~ "[" ]];then
         PDF_FNTags=$(echo ${baseFN} | cut -d "[" -f2 | cut -d "]" -f1)
+        if [[ ${PDF_FNTags} =~ "[" ]];then # ensuring there isn't a [[ tag tag ]] scenario
+            PDF_FNTags=$(echo ${PDF_FNTags} | cut -d "[" -f2 | cut -d "]" -f1)
+        fi
     fi
     
     #does it have a date in the filename at the end like GScan2PDF does?
@@ -119,6 +125,13 @@ eval_metadata (){
     if  [[ -z ${PDF_FNCreate_Time} ]] && [[ ! -z ${PDF_Create_Time} ]];then
         PDF_FNCreate_Time=${PDF_Create_Time}
     fi
+    if [[ ${PDF_FNCreate_Time} != ${PDF_Create_Time} ]]
+        ARGVAL=${PDF_Create_Time}
+        FNARGVAL=${PDF_FNCreate_Time}
+        if_conflicting_tags
+        PDF_Create_Time=${ARGVAL}
+        PDF_FNCreate_Time=${ARGVAL}
+     fi   
 
     if [[ -z ${PDF_Keywords} ]] && [[ ! -z ${PDF_FNTags} ]];then
         PDF_Keywords=${PDF_FNTags}
@@ -126,6 +139,14 @@ eval_metadata (){
     if  [[ -z ${PDF_FNTags} ]] && [[ ! -z ${PDF_Keywords} ]];then
         PDF_FNTags=${PDF_Keywords}
     fi
+    if [[ ${PDF_FNTags} != ${PDF_Keywords} ]]
+        ARGVAL=${PDF_Keywords}
+        FNARGVAL=${PDF_FNTags}
+        if_conflicting_tags
+        PDF_Keywords=${ARGVAL}
+        PDF_FNTags=${ARGVAL}
+     fi   
+
     
     if [[ -z ${PDF_Title} ]] && [[ ! -z ${PDF_FNTitle} ]];then
         PDF_Title=${PDF_FNTitle} 
@@ -133,11 +154,37 @@ eval_metadata (){
     if  [[ -z ${PDF_FNTitle} ]] && [[ ! -z ${PDF_Title} ]];then
         PDF_FNTitle=${PDF_Title}
     fi
-    
-    
-    #TODO: Add in: if conflict, flag it
-    
-    
+    if [[ ${PDF_FNTitle} != ${PDF_Title} ]]
+        ARGVAL=${PDF_Title}
+        FNARGVAL=${PDF_FNTitle}
+        if_conflicting_tags
+        PDF_Title=${ARGVAL}
+        PDF_FNTitle=${ARGVAL}
+     fi   
+
+}
+
+if_conflicting_tags () {
+    #abstracting ARGVAL,FNARGVAL
+    if [ "${ARGVAL}" != "${FNARGVAL}" ];then 
+        Resolution=$(yad --width=400 --center --window-icon=gtk-error \
+        --borders 3 --title="Conflicting metadata" --text="Verify conflicting PDF metadata:" \
+        --checklist --list --column=choose --column=source --column=metadata:text false "${ARGVAL}" false "${FNARGVAL}" false "manual resolution")
+        if [ ! -z "${Resolution}" ];then
+            if [[ "${Resolution}" =~ "manual resolution" ]];then
+                ResolveString=$(echo "${ARGVAL} ${FNARGVAL}")
+                Resolution2=$(yad --width=400 --center --window-icon=gtk-info \
+                --borders 3 --title="PDF Metadata" --text="Verify and edit PDF metadata:" \
+                --field="Edit This String" \
+                --button=gtk-save:0 --button=gtk-cancel:1 \
+                "${ResolveString}")
+                ARGVAL=$(echo "${Resolution2}")
+                FNARGVAL=$(echo "${Resolution2}")            
+            else
+                ARGVAL=$(echo "$Resolution" | awk -F '|' '{print $2}')
+                FNARGVAL=$(echo "$Resolution" | awk -F '|' '{print $2}')
+            fi
+        fi
 }
 
 display_metadata () {
@@ -146,6 +193,7 @@ display_metadata () {
     xpdf -remote skipa -geometry 300x400 -bg rgb:10/16/10 -z page "${PDF_File}" &
     
     #TODO  - note that the exiftag values will be what is written!!
+    
     #https://www.thelinuxrain.com/articles/multiple-item-data-entry-with-yad
     OutString=$(yad --width=400 --center --window-icon=gtk-info \
     --borders 3 --title="PDF Metadata" --text="Verify and edit PDF metadata:" \
