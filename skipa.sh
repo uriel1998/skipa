@@ -2,26 +2,12 @@
 
 ########################################################################
 #	Reading tags from several types of files
-#
-#   Get tags from metadata
-#	Get tags from filename
+#   by Steven Saus (c)2020-09-13
+#   Licensed under the MIT license
 ########################################################################
-#TODO - just make sure there's no mismatches mode
-#TODO - just make sure there's no empty mode
-#TODO - loop over directory mode
-#TODO - Mendeley renaming
-#TODO - is there OCR mode
-
-# Requirements
-#pdftohtml
-#html2text
-#stat
-#date
-#exiftool
-#detox
 
 ########################################################################
-# Definitions - if sourced, these should already be set
+# Definitions 
 ########################################################################
 init_vars (){
 	PDF_Text=""
@@ -251,4 +237,4 @@ display_metadata () {
 		#eval_metadata
 		tags_to_filename
 	fi
-    
+    rm -rf "$tempdir"
