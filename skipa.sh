@@ -11,6 +11,7 @@
 #TODO - loop over directory mode
 #TODO - Mendeley renaming
 #TODO - is there OCR mode
+
 # Requirements
 #pdftohtml
 #html2text
@@ -198,9 +199,7 @@ display_metadata () {
 	#Using the remote server aspect of xpdf to kill it after perusal
 	xpdf -remote skipa -geometry 300x400 -bg rgb:10/16/10 -z page "${PDF_File}" &
 	
-	#TODO  - note that the exiftag values will be what is written!!
-	
-	#https://www.thelinuxrain.com/articles/multiple-item-data-entry-with-yad
+    #https://www.thelinuxrain.com/articles/multiple-item-data-entry-with-yad
 	OutString=$(yad --width=400 --center --window-icon=gtk-info \
 	--borders 3 --title="PDF Metadata" --text="Verify and edit PDF metadata:" \
 	--form --date-format="  %Y:%m:%d %H:%M:%S" --item-separator="," \
@@ -214,8 +213,6 @@ display_metadata () {
 	"${PDF_File}" "${PDF_Title}" "${PDF_Subject}" "${PDF_Author}" "${PDF_Keywords}" "${PDF_Create_Time}" )
 	foo=$?
 	if [[ "$foo" == "0" ]];then
-		#awk out fields
-		
 		PDF_File=$(echo "$OutString" | awk -F '|' '{print $1}') 
 		PDF_Title=$(echo "$OutString" | awk -F '|' '{print $2}') 
 		PDF_FNTitle=$(echo "$OutString" | awk -F '|' '{print $2}')
@@ -224,8 +221,6 @@ display_metadata () {
 		PDF_Keywords=$(echo "$OutString" | awk -F '|' '{print $5}') 
         PDF_FNTags=$(echo "$OutString" | awk -F '|' '{print $5}')
 		PDF_Create_Time=$(echo "$OutString" | awk -F '|' '{print $6}' ) 
-
-		#if any matching field is blank, copy over
 	fi 
 	
 	xpdf -remote skipa -quit
@@ -238,7 +233,7 @@ display_metadata () {
 
     init_vars
 	if [ "$#" = 0 ];then
-		echo "Please call this as a function or with the filename as the first argument."
+		echo "Please call this with the filename as the first argument."
 	else
 		if [ -f "$1" ];then
 			PDF_File="$1"
@@ -256,4 +251,4 @@ display_metadata () {
 		#eval_metadata
 		tags_to_filename
 	fi
-
+    
