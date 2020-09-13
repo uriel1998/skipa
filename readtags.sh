@@ -8,6 +8,7 @@
 ########################################################################
 #TODO - just make sure there's no mismatches mode
 #TODO - just make sure there's no empty mode
+#TODO - loop over directory mode
 #TODO - Mendeley renaming
 #TODO - is there OCR mode
 # Requirements
@@ -41,7 +42,8 @@ init_vars (){
 tags_to_filename (){
 
 		#write to exif first
-		exiftool -Author="${PDF_Author}" -Keywords="${PDF_Keywords}" -Subject="${PDF_Subject}" -Title="${PDF_Title}" -CreateDate="${PDF_Create_Time}" "${PDF_File}"
+        # NOTE THAT IT OVERWRITES IN PLACE
+		exiftool -overwrite_original_in_place -Author="${PDF_Author}" -Keywords="${PDF_Keywords}" -Subject="${PDF_Subject}" -Title="${PDF_Title}" -CreateDate="${PDF_Create_Time}" "${PDF_File}"
 		
 		mv "${PDF_File}" "$tempdir/${PDF_File}"
 		#TITLE-YYYY-MM-DD[tag tag tag tag].pdf
@@ -50,8 +52,7 @@ tags_to_filename (){
 		#create new fn string
 		T2a=$(echo "${PDF_Title}" | detox --inline)
 		T2b=$(echo "${PDF_Create_Time}" | cut -d " " -f1 | sed s/:/-/g)
-		T2FN=$(printf "%s/%s-%s[%s].pdf" "$PDF_Dir" "$T2a" "$T2b" "$PDF_Keywords")
-		#echo "$T2FN"
+		T2FN=$(printf "%s/%s-%s[%s].pdf" "${PDF_Dir}" "$T2a" "$T2b" "${PDF_Keywords}")
 		cp "$tempdir/${PDF_File}" "${T2FN}"
 		#copy old to new T2FN string
 	
@@ -68,26 +69,26 @@ tags_to_filename (){
 ########################################################################
 get_filename_tags (){
    
-	baseFN=$(basename ${PDF_File})
+	baseFN=$(basename "${PDF_File}")
 	
 	#TODO - for Mendeley renamed stuff
 	#A Decade in Internet Time Symposium on the Dynamics of the Internet and Society, September 2011 - Boyd, Marwick, Boyd - Social Privacy.pdf
 	#JOURNAL - AUTHOR - TITLE - YEAR
 	
 	if [[ ${baseFN} =~ "[" ]];then
-		PDF_FNTags=$(echo ${baseFN} | cut -d "[" -f2 | cut -d "]" -f1)
-		if [[ ${PDF_FNTags} =~ "[" ]];then # ensuring there isn't a [[ tag tag ]] scenario
-			PDF_FNTags=$(echo ${PDF_FNTags} | cut -d "[" -f2 | cut -d "]" -f1)
+		PDF_FNTags=$(echo "${baseFN}" | cut -d "[" -f2 | cut -d "]" -f1)
+		if [[ "${PDF_FNTags}" =~ "[" ]];then # ensuring there isn't a [[ tag tag ]] scenario
+			PDF_FNTags=$(echo "${PDF_FNTags}" | cut -d "[" -f2 | cut -d "]" -f1)
 		fi
 	fi
 	
 	#does it have a date in the filename at the end like GScan2PDF does?
-	if [[ ${baseFN} =~ [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] ]];then
-		PDF_FNTitle=$(echo ${baseFN//_/ } | cut -d "[" -f1 | sed -n "s/\(^.*\)-[0-9][0-9][0-9][0-9].*$/\1/p")
-		scratch3=$(echo ${baseFN} | cut -d "[" -f1 | sed -n "s/^.*-\([0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]\).*$/\1/p")
-		PDF_FNCreate_Time=$(printf "%s 00:00:00+00:00" "$scratch3")
+	if [[ "${baseFN}" =~ [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] ]];then
+		PDF_FNTitle=$(echo "${baseFN//_/ }" | cut -d "[" -f1 | sed -n "s/\(^.*\)-[0-9][0-9][0-9][0-9].*$/\1/p")
+		scratch3=$(echo "${baseFN}" | cut -d "[" -f1 | sed -n "s/^.*-\([0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]\).*$/\1/p")
+		PDF_FNCreate_Time=$(printf "%s 00:00:00+00:00" "$scratch3" | sed 's/-/:/g')
 	else
-		PDF_FNTitle=$(echo ${baseFN//_/ } | cut -d "[" -f1 )
+		PDF_FNTitle=$(echo "${baseFN//_/ }" | cut -d "[" -f1 )
 	fi
 }
 
@@ -96,19 +97,19 @@ get_filename_tags (){
 ########################################################################
 get_metadata_tags() {
 
-	PDF_Text=$(pdftohtml -stdout -s -i -noframes ${PDF_File} | html2text)
+	PDF_Text=$(pdftohtml -stdout -s -i -noframes "${PDF_File}" | html2text)
 	if [ -z "$PDF_Text" ];then
-		PDF_Text=$(pdftohtml -stdout -s -i -hidden -noframes ${PDF_File} | html2text)
+		PDF_Text=$(pdftohtml -stdout -s -i -hidden -noframes "${PDF_File}" | html2text)
 	fi
 	
-	scratch1=$(stat -c '%Y' ${PDF_File})
+	scratch1=$(stat -c '%Y' "${PDF_File}")
 	PDF_FileMod_Time=$(date -d @"${scratch1}" '+%Y:%m:%d %H:%M:%S%:z')
-	scratch2=$(exiftool -T -sep ' ' -Author -Keywords -Subject -Title -CreateDate ${PDF_File})
+	scratch2=$(exiftool -T -sep ' ' -Author -Keywords -Subject -Title -CreateDate "${PDF_File}")
 	PDF_Author=$(echo "${scratch2}" | awk -F $'\t' '{print $1}')
 	PDF_Keywords=$(echo "${scratch2}" | awk -F $'\t' '{print $2}')
 	PDF_Subject=$(echo "${scratch2}" | awk -F $'\t' '{print $3}')
 	PDF_Title=$(echo "${scratch2//_/ }" | awk -F $'\t' '{print $4}')
-	PDF_Create_Time=$(echo "${scratch2}" | awk -F $'\t' '{print $5}')
+	PDF_Create_Time=$(echo "${scratch2}" | awk -F $'\t' '{print $5}' )
 
 }
 
@@ -122,7 +123,10 @@ eval_metadata (){
 	if  [[ -z ${PDF_FNCreate_Time} ]] && [[ ! -z ${PDF_Create_Time} ]];then
 		PDF_FNCreate_Time=${PDF_Create_Time}
 	fi
-	if [[ ${PDF_FNCreate_Time} != ${PDF_Create_Time} ]];then
+    
+    
+    # only comparing date, since that's all the file tagging keeps
+	if [[ `echo "${PDF_FNCreate_Time}" | awk -F ' ' '{print $1}'` != `echo "${PDF_Create_Time}" | awk -F ' ' '{print $1}'` ]];then
 		ARGVAL=${PDF_Create_Time}
 		FNARGVAL=${PDF_FNCreate_Time}
 		if_conflicting_tags
@@ -131,32 +135,32 @@ eval_metadata (){
 	 fi   
 
 	if [[ -z ${PDF_Keywords} ]] && [[ ! -z ${PDF_FNTags} ]];then
-		PDF_Keywords=${PDF_FNTags}
+		PDF_Keywords="${PDF_FNTags}"
 	fi
 	if  [[ -z ${PDF_FNTags} ]] && [[ ! -z ${PDF_Keywords} ]];then
-		PDF_FNTags=${PDF_Keywords}
+		PDF_FNTags="${PDF_Keywords}"
 	fi
-	if [[ ${PDF_FNTags} != ${PDF_Keywords} ]];then
-		ARGVAL=${PDF_Keywords}
-		FNARGVAL=${PDF_FNTags}
+	if [[ "${PDF_FNTags}" != "${PDF_Keywords}" ]];then
+		ARGVAL="${PDF_Keywords}"
+		FNARGVAL="${PDF_FNTags}"
 		if_conflicting_tags
-		PDF_Keywords=${ARGVAL}
-		PDF_FNTags=${ARGVAL}
+		PDF_Keywords="${ARGVAL}"
+		PDF_FNTags="${ARGVAL}"
 	 fi   
 
 	
 	if [[ -z ${PDF_Title} ]] && [[ ! -z ${PDF_FNTitle} ]];then
-		PDF_Title=${PDF_FNTitle} 
+		PDF_Title="${PDF_FNTitle}"
 	fi
 	if  [[ -z ${PDF_FNTitle} ]] && [[ ! -z ${PDF_Title} ]];then
-		PDF_FNTitle=${PDF_Title}
+		PDF_FNTitle="${PDF_Title}"
 	fi
-	if [[ ${PDF_FNTitle} != ${PDF_Title} ]];then
-		ARGVAL=${PDF_Title}
-		FNARGVAL=${PDF_FNTitle}
+	if [[ "${PDF_FNTitle}" != "${PDF_Title}" ]];then
+		ARGVAL="${PDF_Title}"
+		FNARGVAL="${PDF_FNTitle}"
 		if_conflicting_tags
-		PDF_Title=${ARGVAL}
-		PDF_FNTitle=${ARGVAL}
+		PDF_Title="${ARGVAL}"
+		PDF_FNTitle="${ARGVAL}"
 	 fi   
 
 }
@@ -168,10 +172,6 @@ if_conflicting_tags () {
 		Resolution=$(yad --width=400 --height=200 --center --window-icon=gtk-error \
 		--borders 3 --title="Conflicting metadata" --text="Verify conflicting PDF metadata:" \
 		--radiolist --list --column=choose:RD --column=metadata:text false "${ARGVAL}" false "${FNARGVAL}" false "manual resolution")
-        echo "${Resolution}"
-        if [[ "${Resolution}" =~ "TRUE|" ]];then
-            echo "FUK"
-        fi
 		if [ ! -z "${Resolution}" ];then
 			if [[ "${Resolution}" =~ "manual resolution" ]];then
 				ResolveString=$(echo "${ARGVAL} ${FNARGVAL}")
@@ -203,7 +203,7 @@ display_metadata () {
 	#https://www.thelinuxrain.com/articles/multiple-item-data-entry-with-yad
 	OutString=$(yad --width=400 --center --window-icon=gtk-info \
 	--borders 3 --title="PDF Metadata" --text="Verify and edit PDF metadata:" \
-	--form --date-format="+%Y:%m:%d %H:%M:%S%:z" --item-separator="," \
+	--form --date-format="  %Y:%m:%d %H:%M:%S" --item-separator="," \
 	--field="Filename" \
 	--field="Title" \
 	--field="Subject" \
@@ -214,17 +214,16 @@ display_metadata () {
 	"${PDF_File}" "${PDF_Title}" "${PDF_Subject}" "${PDF_Author}" "${PDF_Keywords}" "${PDF_Create_Time}" )
 	foo=$?
 	if [[ "$foo" == "0" ]];then
-		#echo "$OutString"
 		#awk out fields
 		
 		PDF_File=$(echo "$OutString" | awk -F '|' '{print $1}') 
 		PDF_Title=$(echo "$OutString" | awk -F '|' '{print $2}') 
-		
-		PDF_Subject=$(echo "$OutString" | awk -F '|' '{print $4}') 
-		PDF_Author=$(echo "$OutString" | awk -F '|' '{print $5}') 
-		PDF_Keywords=$(echo "$OutString" | awk -F '|' '{print $6}') 
-
-		PDF_Create_Time=$(echo "$OutString" | awk -F '|' '{print $8}') 
+		PDF_FNTitle=$(echo "$OutString" | awk -F '|' '{print $2}')
+		PDF_Subject=$(echo "$OutString" | awk -F '|' '{print $3}') 
+		PDF_Author=$(echo "$OutString" | awk -F '|' '{print $4}') 
+		PDF_Keywords=$(echo "$OutString" | awk -F '|' '{print $5}') 
+        PDF_FNTags=$(echo "$OutString" | awk -F '|' '{print $5}')
+		PDF_Create_Time=$(echo "$OutString" | awk -F '|' '{print $6}' ) 
 
 		#if any matching field is blank, copy over
 	fi 
@@ -243,7 +242,8 @@ display_metadata () {
 	else
 		if [ -f "$1" ];then
 			PDF_File="$1"
-			PDF_Dir=$(dirname `readlink -f ${PDF_File}`)
+            fullpath=$(readlink -f "$1")
+			PDF_Dir=$(dirname "$fullpath")
 		fi
 		if [ ! -f "$PDF_File" ];then
 			echo "File not found..."
@@ -253,7 +253,7 @@ display_metadata () {
 		get_metadata_tags
 		eval_metadata
 		display_metadata
-		eval_metadata
+		#eval_metadata
 		tags_to_filename
 	fi
 
