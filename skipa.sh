@@ -27,16 +27,16 @@ init_vars (){
     RETURNVAL=""
 }
 
-
-#TODO - in directory mode it gets the pathnames wrong, so do I need to 
-# have full paths then???
 tags_to_filename (){
+        # Needed for when I'm directory processing
+        PDF_FileString=$(basename "${PDF_File}")
 
+        
 		#write to exif first
         # NOTE THAT IT OVERWRITES IN PLACE
 		exiftool -overwrite_original_in_place -Author="${PDF_Author}" -Keywords="${PDF_Keywords}" -Subject="${PDF_Subject}" -Title="${PDF_Title}" -CreateDate="${PDF_Create_Time}" "${PDF_File}"
 		
-		mv "${PDF_File}" "$tempdir/${PDF_File}"
+		mv "${PDF_File}" "$tempdir/${PDF_FileString}"
 		#TITLE-YYYY-MM-DD[tag tag tag tag].pdf
 		#move original to tempdir
 		
@@ -44,13 +44,10 @@ tags_to_filename (){
 		T2a=$(echo "${PDF_Title}" | detox --inline)
 		T2b=$(echo "${PDF_Create_Time}" | cut -d " " -f1 | sed s/:/-/g)
 		T2FN=$(printf "%s/%s-%s[%s].pdf" "${PDF_Dir}" "$T2a" "$T2b" "${PDF_Keywords}")
-		cp "$tempdir/${PDF_File}" "${T2FN}"
+		cp "$tempdir/${PDF_FileString}" "${T2FN}"
 		#copy old to new T2FN string
 	
 }
-
-
-
 
 ########################################################################
 # Getting tags embedded in filename, if possible
