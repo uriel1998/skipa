@@ -24,6 +24,7 @@ init_vars (){
 	ARGVAL=""
 	FNARGVAL=""
 	tempdir=$(mktemp -d)
+    RETURNVAL=""
 }
 
 tags_to_filename (){
@@ -213,6 +214,22 @@ display_metadata () {
 	
 }
 
+# Tests particularly for directory checking, but also just because
+is_pdf (){
+    RETURNVAL=""
+    RETURNVAL=$(file "${PDF_File}" | grep -c "PDF document")
+    
+}
+
+main_loop (){
+        get_filename_tags
+		get_metadata_tags
+		eval_metadata
+		display_metadata
+		tags_to_filename
+    
+}
+
 ##############################################################################
 # Main
 ##############################################################################
@@ -221,20 +238,30 @@ display_metadata () {
 	if [ "$#" = 0 ];then
 		echo "Please call this with the filename as the first argument."
 	else
+        if [ -d "$1" ];then
+            for files in $1/*; do
+                if [ -f "$files" ];then                   
+                    PDF_File="$files"
+                    is_pdf
+                    if [ $RETURNVAL -gt 0 ];then
+                        fullpath=$(readlink -f "$files")
+                        PDF_Dir=$(dirname "$fullpath")
+                        main_loop
+                    fi
+                fi
+            done                
+            exit
+        fi
 		if [ -f "$1" ];then
 			PDF_File="$1"
-            fullpath=$(readlink -f "$1")
-			PDF_Dir=$(dirname "$fullpath")
-		fi
-		if [ ! -f "$PDF_File" ];then
+            is_pdf
+            if [ $RETURNVAL -gt 0 ];then
+                fullpath=$(readlink -f "$1")
+                PDF_Dir=$(dirname "$fullpath")
+                main_loop
+            fi
+		else
 			echo "File not found..."
-			exit 1
-		fi
-		get_filename_tags
-		get_metadata_tags
-		eval_metadata
-		display_metadata
-		#eval_metadata
-		tags_to_filename
+        fi
 	fi
     rm -rf "$tempdir"
