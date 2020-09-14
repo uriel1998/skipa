@@ -27,6 +27,9 @@ init_vars (){
     RETURNVAL=""
 }
 
+
+#TODO - in directory mode it gets the pathnames wrong, so do I need to 
+# have full paths then???
 tags_to_filename (){
 
 		#write to exif first
