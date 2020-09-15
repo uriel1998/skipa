@@ -196,9 +196,14 @@ display_metadata () {
 	--field="Author" \
 	--field="Tags" \
 	--field="Creation Time":DT \
-	--button=gtk-save:0 --button=gtk-cancel:1 --button=gtk-quit:1\
+	--button=gtk-save:0 --button=gtk-cancel:2 --button=gtk-quit:1\
 	"${PDF_File}" "${PDF_Title}" "${PDF_Subject}" "${PDF_Author}" "${PDF_Keywords}" "${PDF_Create_Time}" )
 	foo=$?
+    if [[ "$foo" == "2" ]];then
+        xpdf -remote skipa -quit
+        rm -rf "$tempdir"
+        exit 88  #user 
+    fi
 	if [[ "$foo" == "0" ]];then
 		PDF_File=$(echo "$OutString" | awk -F '|' '{print $1}') 
 		PDF_Title=$(echo "$OutString" | awk -F '|' '{print $2}') 
