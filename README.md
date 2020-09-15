@@ -2,7 +2,7 @@
 
 skipa means ("organize, arrange, place in order") in Old Norse
 
-![skipa logo](https://raw.githubusercontent.com/uriel1998/skipa/master/skipa.png "logo")
+![skipa logo](https://raw.githubusercontent.com/uriel1998/skipa/master/skipa-open-graph.png "logo")
 
 ## Contents
  1. [About](#1-about)
