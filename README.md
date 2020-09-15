@@ -18,11 +18,11 @@ skipa means ("organize, arrange, place in order") in Old Norse
 `skipa` is designed to fix and write tags in PDF files so they can be organized 
 more easily and more tool-agnostically.  
 
-I personally use four main tools for indexing and searching my PDF paperwork:
+I personally use three main tools for indexing and searching my PDF paperwork:
 
-* gscan2pdf
-* recoll
-* TagSpaces
+* [gscan2pdf](https://sourceforge.net/projects/gscan2pdf/)
+* [recoll](https://www.lesbonscomptes.com/recoll/)
+* [TagSpaces](https://www.tagspaces.org/)
 
 However, I've scanned PDF reciepts without adding keywords or tags or even 
 dates before.  `skipa` can be pointed at a single file or at an entire 
@@ -30,7 +30,7 @@ directory to read metadata from the PDF itself - and what is in the filename -
 resolve conflicts, and re-write that metadata in the file itself and in 
 the filename.
 
-*note: I treat the metadata "Keywords" and the term "tags" interchangably here*
+*note: I treat the metadata "Keywords" and the term "tags" interchangeably here*
 
 ## 2. License
 
@@ -64,7 +64,7 @@ and what `TagSpaces` creates. It is in the format:
 
 Usage is straightforward: 
 
-`skipa.sh [path_to_pdf_files | pdf_file ]`
+`skipa.sh [ path_to_pdf_files | pdf_file ]`
 
 Any conflict between the metadata will be presented for resolution. Choose the appropriate 
 radio button or choose "manual resolution" to edit during the loading process.
