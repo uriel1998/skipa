@@ -38,19 +38,22 @@ This project is licensed under the MIT license. For the full license, see `LICEN
 
 ## 3. Prerequisites
 
-### These may already be installed on your system.
+### These may already be installed on your system or easily installable by package manager.
 
  * `grep`
  * `awk` 
  * `sed` 
  * `pdftohtml`
  * `html2text`
- * `stat`
- * `date`
- * `exiftool`
+ * `file`
  * `detox`
  * `xpdf`
- * `yad` https://sourceforge.net/projects/yad-dialog/
+ * `exiftool`
+ * `yad` 
+ * `stat` (coreutils)
+ * `date` (coreutils)
+
+To install them on Debian, simply type `sudo apt install grep gawk sed wkhtmltopdf html2text detox xpdf yad libimage-exiftool-perl coreutils file` .
 
 ## 4. How to use
 
@@ -76,8 +79,8 @@ uses the `file` utility to only work on PDF files.
 
 ## 5. Todo
 
-#TODO - cli-only?
-#TODO - just make sure there's no mismatches mode
-#TODO - just make sure there's no empty mode
-#TODO - Mendeley renaming and metadata writing
-#TODO - is there OCR mode
+* cli-only?  
+* just make sure there's no mismatches mode  
+* just make sure there's no empty mode  
+* Mendeley renaming and metadata writing  
+* is there OCR mode  
