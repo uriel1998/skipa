@@ -25,6 +25,7 @@ init_vars (){
 	FNARGVAL=""
 	tempdir=$(mktemp -d)
     RETURNVAL=""
+    NOWRITE=""
 }
 
 tags_to_filename (){
@@ -159,10 +160,14 @@ if_conflicting_tags () {
 	if [ "${ARGVAL}" != "${FNARGVAL}" ];then 
 		Resolution=$(yad --width=400 --height=200 --center --window-icon=gtk-error \
 		--borders 3 --title="Conflicting metadata" --text="Verify conflicting PDF metadata:" \
-		--radiolist --list --column=choose:RD --column=metadata:text false "${ARGVAL}" false "${FNARGVAL}" false "manual resolution")
+		--radiolist --list --column=choose:RD --column=metadata:text false "${ARGVAL}" false "${FNARGVAL}" true "manual resolution")
 		if [ ! -z "${Resolution}" ];then
 			if [[ "${Resolution}" =~ "manual resolution" ]];then
-				ResolveString=$(echo "${ARGVAL} ${FNARGVAL}")
+                #https://unix.stackexchange.com/questions/353321/remove-all-duplicate-word-from-string-using-shell-script
+				echo "${ARGVAL}"
+                echo "${FNARGVAL}"
+                echo "${ARGVAL} ${FNARGVAL}" | awk '{for (i=1;i<=NF;i++) if (!a[$i]++) printf("%s%s",$i,FS)}{printf("\n")}'
+                ResolveString=$(echo "${ARGVAL} ${FNARGVAL}" | awk '{for (i=1;i<=NF;i++) if (!a[$i]++) printf("%s%s",$i,FS)}{printf("\n")}')
 				Resolution2=$(yad --form --width=400 --center --window-icon=gtk-info \
 				--borders 3 --title="PDF Metadata" --text="Verify and edit PDF metadata:" \
 				--field="Edit This String" \
@@ -196,7 +201,7 @@ display_metadata () {
 	--field="Author" \
 	--field="Tags" \
 	--field="Creation Time":DT \
-	--button=gtk-save:0 --button=gtk-cancel:2 --button=gtk-quit:1\
+	--button=gtk-save:0 --button=gtk-cancel:1 --button=gtk-quit:2\
 	"${PDF_File}" "${PDF_Title}" "${PDF_Subject}" "${PDF_Author}" "${PDF_Keywords}" "${PDF_Create_Time}" )
 	foo=$?
     if [[ "$foo" == "2" ]];then
@@ -204,6 +209,10 @@ display_metadata () {
         rm -rf "$tempdir"
         exit 88  #user 
     fi
+    if [[ "$foo" == "1" ]];then
+        NOWRITE=1
+    fi
+    
 	if [[ "$foo" == "0" ]];then
 		PDF_File=$(echo "$OutString" | awk -F '|' '{print $1}') 
 		PDF_Title=$(echo "$OutString" | awk -F '|' '{print $2}') 
@@ -231,7 +240,11 @@ main_loop (){
 		get_metadata_tags
 		eval_metadata
 		display_metadata
-		tags_to_filename
+        if [ ${NOWRITE} -eq 0 ];then
+            tags_to_filename
+        else
+            NOWRITE=0
+        fi
     
 }
 
