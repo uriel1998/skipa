@@ -1,0 +1,22 @@
+# Roadmap
+
+
+# Find PDFs
+    - obtain filedate (last modified)
+    - obtain metadata
+    - is it OCR'd (have a text layer)?
+        - if not, get one and put it in properly
+    - parse filename by pattern
+    - compare everything
+        - note conflicts
+    - present results
+        - if conflict existed, resolve as directed
+    - write metadata
+    - write filename
+    - set file date to { metadata date | OG last modified date | now}
+    
+    
+# options
+    - cli only
+    - auto-resolve { from file | from tags }
+    - call shrinkpdf utility
