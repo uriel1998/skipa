@@ -20,3 +20,27 @@
     - cli only
     - auto-resolve { from file | from tags }
     - call shrinkpdf utility
+
+https://linuxconfig.org/how-to-get-and-change-pdf-metadata-in-linux
+https://askubuntu.com/questions/27381/how-to-edit-pdf-metadata-from-command-line
+
+
+FUCK: https://github.com/glutanimate/PDFMtEd  looks like a lot has already been done
+'pdfmted-editor' -> '/usr/local/bin/pdfmted-editor'
+'pdfmted-inspector' -> '/usr/local/bin/pdfmted-inspector'
+'pdfmted-thumbnailer' -> '/usr/local/bin/pdfmted-thumbnailer'
+'desktop/pdfmted-editor.desktop' -> '/usr/local/share/applications/pdfmted-editor.desktop'
+'desktop/pdfmted-inspector.desktop' -> '/usr/local/share/applications/pdfmted-inspector.desktop'
+'desktop/pdfmted.svg' -> '/usr/local/share/icons/hicolor/scalable/apps/pdfmted.svg'
+
+
+-- can I configure the way it writes out?
+-- two sets of metadata???
+
+Okay - add thumbnailer and such to PDFMTED
+
+find_thumbnail(){
+    full_path="file://$(realpath -s "$1")"
+    md5name=$(printf %s "${full_path// /%20}" | md5sum)
+    find ~/.thumbnails/ ~/.cache/thumbnails/ -name "${md5name%% *}.png"
+}

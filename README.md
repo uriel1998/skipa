@@ -1,5 +1,9 @@
 # skipa organizer
 
+
+# IMPORTANT:  PDFMtEd ([particularly my fork with some improvements](https://github.com/uriel1998/PDFMtEd)) is a MUCH better utility than this.
+
+
 skipa means ("organize, arrange, place in order") in Old Norse
 
 ![skipa logo](https://raw.githubusercontent.com/uriel1998/skipa/master/skipa-open-graph.png "logo")
